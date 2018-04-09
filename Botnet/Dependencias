@@ -1,4 +1,5 @@
 [*] Instalar 
     nmap
     python-nmap
+    python-scapy
     
