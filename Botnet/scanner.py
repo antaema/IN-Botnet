@@ -5,6 +5,8 @@ import socket
 import unicodedata
 from scapy.all import srp,Ether,ARP,conf 
 
+sys.path.append("./")
+
 class Scanner:
 	def __init__(self):
 		self.lmachine = []
@@ -121,7 +123,7 @@ class Machine:
 		print '** I am ' + self.Ip 
 		print '-- My Mac is: ' + self.Mac
 		try:	
-			print '-- This are my houses:  ',
+			print '-- This arsys.path.append("./")e my houses:  ',
 			for i in self.hostname:
 				print i['name'],
 		except:
@@ -222,10 +224,14 @@ class Netlib:
 
 
 def main():
-	scan = Scanner()
-	scan.findLocals()
-	scan.scanIp(socket.gethostbyname('lightron.org'),'')
-	scan.scanIp(socket.gethostbyname('www.desentupidorarolabosta.com.br'),'')
+	try:
+		scan = Scanner()
+		scan.findLocals()
+		scan.scanIp(socket.gethostbyname('lightron.org'),'')
+		scan.scanIp(socket.gethostbyname('www.desentupidorarolabosta.com.br'),'')
+	except KeyboardInterrupt:
+		print "Exit"
+		sys.exit()
 
 if __name__ == "__main__":
     main()
