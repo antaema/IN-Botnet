@@ -3,20 +3,25 @@ import ifcfg
 import nmap 
 import socket
 import unicodedata
-from scapy.all import srp,Ether,ARP,conf 
+from scapy.all import *
 
-sys.path.append("./")
+sys.path.append('..')
+
+from port import Port
+from machine import Machine
 
 class Scanner:
 	def __init__(self):
 		self.lmachine = []
 		self.nm = nmap.PortScanner()
+		self.os = ''
+		self.osChance = ''
 
 	def find_Mask(self,interface):
 		broadcast = unicodedata.normalize('NFKD', interface['broadcast']).encode('ascii','ignore')
 
-		if interface['netmask'] == None:
-   			netmask = Netlib.broadcast2Mask(broadcast)
+		if interface['netmask'] is None:
+   			netmask = self.broadcast2Mask(broadcast)
 		else:
 			netmask = unicodedata.normalize('NFKD', interface['netmask']).encode('ascii','ignore') 
 		return netmask
@@ -24,14 +29,16 @@ class Scanner:
 	def find_Ip(self,interface,netmask):
 		broadcast = unicodedata.normalize('NFKD', interface['broadcast']).encode('ascii','ignore')
 
-		if interface['inet'] == None:
-			ips = Netlib.broadcast2Ip(broadcast,netmask)
+		if interface['inet'] is None:
+			ips = self.broadcast2Ip(broadcast,netmask)
 		else:
-			ips = unicodedata.normalize('NFKD', interface['inet']).encode('ascii','ignore') + Netlib.maskConverter(netmask)
+			ips = unicodedata.normalize('NFKD', interface['inet']).encode('ascii','ignore') + self.maskConverter(netmask)
 		return ips
 	
 	def scanIp(self,Ip,Mac):
-		self.nm.scan(Ip,'1-8000')
+		# if Mac is None:
+		# 	Mac = getmacbyip(Ip)
+		self.nm.scan(Ip,'1-1000')
 		ports = []
 		for protocol in self.nm[Ip].all_protocols():
 			lport = self.nm[Ip][protocol].keys()
@@ -45,9 +52,12 @@ class Scanner:
 		m = Machine(Ip,Mac,ports)
 		if 'hostnames' in self.nm[Ip]:
 			m.hostname = self.nm[Ip]['hostnames']
+		
+		m = self.findSO(m)
 		self.lmachine.append(m)
+		
 		# m.Print()
-
+		
 	def findLocals(self):
 		for name, interface in ifcfg.interfaces().items():
 			if name != 'lo':
@@ -71,80 +81,11 @@ class Scanner:
 								find = True
 								break
 						if find == False:		
-							self.scanIp(Ip,Mac)					
-		# print "\n[*] Scan Complete!" 
-		
-class Port:
-	def __init__(self,port,name,state,product,protocol):
-		self.port = port
-		self.name = name
-		self.state = state
-		self.product = product
-		self.protocol = protocol
-	
-	def getPort(self):
-		return self.port
+							self.scanIp(Ip,Mac)		
+		return self.lmachine			
+		# print "\n[*] Scan Complete!"
 
-	def getName(self):
-		return self.name
-	
-	def getState(self):
-		return self.state
-	
-	def getProduct(self):
-		return self.product
-	
-	def getProtocol(self):
-		return self.protocol
-
-class Machine:
-	def __init__(self,Ip,Mac,ports):
-		self.Ip = Ip
-		self.Mac = Mac
-		self.ports = ports
-
-	def getIp(self):
-		return self.Ip
-
-	def getMac(self):
-		return self.Mac
-
-	def getPorts(self):
-		return self.ports
-	
-	def getHostnames(self):
-		try:
-			return self.hostname
-		except:
-			return ''
-
-
-	def Print(self):
-		print '** I am ' + self.Ip 
-		print '-- My Mac is: ' + self.Mac
-		try:	
-			print '-- This arsys.path.append("./")e my houses:  ',
-			for i in self.hostname:
-				print i['name'],
-		except:
-			pass
-		print ' '
-		print '-- My Ports are: '
-		print ' '
-		for p in self.ports:
-			print '---- Hi I am the port ' + str(p.getPort()) + " !"
-			print '---- You can call me  ' + p.getName() + " ."
-			print '---- But my nickname is ' + p.getProduct() + " ."
-			print '---- Today my mood is ' + p.getState() + " !"
-			print '---- And i can talk by  ' + p.getProtocol() + "." 
-			print 'Bye Bye'
-			print ' '
-
-
-
-class Netlib: 	
-	@staticmethod
-	def maskConverter(s):
+	def maskConverter(self, s):
 		return {
 			"0.0.0.0"   : "/0",
 			"128.0.0.0" : "/1",
@@ -181,8 +122,7 @@ class Netlib:
 			"255.255.255.255" : "/32"
 		}.get(s, '/16')    
 	
-	@staticmethod
-	def broadcast2Mask(s):
+	def broadcast2Mask(self, s):
 		last = 0
 		points = 0
 		r = ''
@@ -201,8 +141,8 @@ class Netlib:
 					r = r + '255.'
 					last = i + 1
 					points += 1
-	@staticmethod
-	def broadcast2Ip(s, mask):
+
+	def broadcast2Ip(self, s, mask):
 		last = 0
 		points = 0
 		for i in range(0,len(s)):
@@ -212,26 +152,50 @@ class Netlib:
 					while points < 3:
 						r = r + '.0'
 						points += 1
-					return r + Netlib.maskConverter(mask)
+					return r + self.maskConverter(mask)
 				elif points == 3:
 					r  = s[0 : last] + '0'
-					return r + Netlib.maskConverter(mask)
+					return r + self.maskConverter(mask)
 				else:
 					last = i + 1
 					points += 1
 
+	def scanUrl(self, url):
+		ip = socket.gethostbyname(url)
+		# mac = getmacbyip(ip)
+		mac = ''		
+		self.scanIp(ip, mac)
 
+	def findSO(self,m):
+		load_module("nmap")
 
+		oport = 80 
+		cport = 81
 
-def main():
-	try:
-		scan = Scanner()
-		scan.findLocals()
-		scan.scanIp(socket.gethostbyname('lightron.org'),'')
-		scan.scanIp(socket.gethostbyname('www.desentupidorarolabosta.com.br'),'')
-	except KeyboardInterrupt:
-		print "Exit"
-		sys.exit()
+		for p in m.ports:
+			if p.port == 80 and p.state == 'open' and p.protocol == 'tcp':
+				oport = 80
+				break
+			elif p.port > 80:
+				for i in m.ports:
+					if i.state == 'open' and i.protocol == 'tcp':
+						oport = i.port
+						break
+			if p.port == cport and p.state == 'open' and p.protocol == 'tcp':
+				while i.state == 'open' and i.port
+			elif p.port > cport:
+				for i in m.ports:
+					if i.state == 'open' and i.protocol == 'tcp':
+						oport = i.port
+						break
 
-if __name__ == "__main__":
-    main()
+		conf.nmap_base='nmap-os-fingerprints'
+		res = nmap_fp(target=m.Ip, oport = oport, cport = cport)
+		accuracy = res[0]
+		data = res[1]
+		print target ,
+		print ' | OS : ' ,
+		print data  ,
+		print   "%" 
+		print accuracy * 100
+		return  data
