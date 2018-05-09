@@ -38,7 +38,7 @@ class Scanner:
 	def scanIp(self,Ip,Mac):
 		# if Mac is None:
 		# 	Mac = getmacbyip(Ip)
-		self.nm.scan(Ip,'1-1000')
+		self.nm.scan(Ip,'1-200')
 		ports = []
 		for protocol in self.nm[Ip].all_protocols():
 			lport = self.nm[Ip][protocol].keys()
@@ -53,11 +53,15 @@ class Scanner:
 		if 'hostnames' in self.nm[Ip]:
 			m.hostname = self.nm[Ip]['hostnames']
 		
-		m = self.findSO(m)
+		so,accuracy = self.findSO(m)
+		m.so = so
+		m.accuracy = accuracy
 		self.lmachine.append(m)
-		
-		# m.Print()
-		
+
+	def printall(self):
+		for m in self.lmachine:
+			m.Print()
+
 	def findLocals(self):
 		for name, interface in ifcfg.interfaces().items():
 			if name != 'lo':
@@ -166,36 +170,27 @@ class Scanner:
 		mac = ''		
 		self.scanIp(ip, mac)
 
-	def findSO(self,m):
+	def findSO(self, m):
 		load_module("nmap")
 
 		oport = 80 
 		cport = 81
 
 		for p in m.ports:
-			if p.port == 80 and p.state == 'open' and p.protocol == 'tcp':
-				oport = 80
-				break
-			elif p.port > 80:
+			if p.port == 80 and p.state == 'closed' and p.protocol == 'tcp':
 				for i in m.ports:
 					if i.state == 'open' and i.protocol == 'tcp':
 						oport = i.port
 						break
+
 			if p.port == cport and p.state == 'open' and p.protocol == 'tcp':
-				while i.state == 'open' and i.port
-			elif p.port > cport:
 				for i in m.ports:
-					if i.state == 'open' and i.protocol == 'tcp':
-						oport = i.port
+					if i.state == 'closed' and i.protocol == 'tcp':
+						cport = i.port
 						break
 
 		conf.nmap_base='nmap-os-fingerprints'
 		res = nmap_fp(target=m.Ip, oport = oport, cport = cport)
 		accuracy = res[0]
 		data = res[1]
-		print target ,
-		print ' | OS : ' ,
-		print data  ,
-		print   "%" 
-		print accuracy * 100
-		return  data
+		return  data, accuracy

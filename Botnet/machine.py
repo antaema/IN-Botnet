@@ -4,27 +4,32 @@ class Machine:
         self.Mac = Mac
         self.ports = ports
         self.hostname = ' '
+        self.so = ''
+        self.accuracy = ''
     
     def Print(self):
-        print '** I am ' + self.Ip 
-        print '-- My Mac is: ' + self.Mac
-        try:	
-            print '-- This are my houses:  ',
-            for i in self.hostname:
-                print i['name'],
-        except:
-            pass
+        print '** IP ' + self.Ip 
+        print '-- MAC: ' + self.Mac
+        print '-- Hostnames:  ',
+        for i in self.hostname:
+            print i['name'],
         print ' '
-        print '-- My Ports are: '
+        print '-- Possibles SO\'s: ' , 
+        for os in self.so:
+            print os + ' ',
         print ' '
+        print '-- Accuracy: ' ,
+        print self.accuracy
+        print '-- Ports: '
         for p in self.ports:
-            print '---- Hi I am the port ' + str(p.getPort()) + " !"
-            print '---- You can call me  ' + p.getName() + " ."
-            print '---- But my nickname is ' + p.getProduct() + " ."
-            print '---- Today my mood is ' + p.getState() + " !"
-            print '---- And i can talk by  ' + p.getProtocol() + "." 
+            print '---- Port: ' + str(p.getPort()) + " !"
+            print '---- Name:  ' + p.getName() + " ."
+            print '---- Product: ' + p.getProduct() + " ."
+            print '---- State: ' + p.getState() + " !"
+            print '---- Protocol:  ' + p.getProtocol() + "." 
             print 'Bye Bye'
             print ' '
+        print '\n\n'
 
     
     def getIp(self):
